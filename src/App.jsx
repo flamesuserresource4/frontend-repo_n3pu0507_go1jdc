@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ShoppingCart, Search, Menu, Flame, ChevronDown, Star } from 'lucide-react'
+import { ShoppingCart, Search, Menu, Flame, ChevronDown, Star, X } from 'lucide-react'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
@@ -48,7 +48,7 @@ function Header({ onCartOpen }) {
   )
 }
 
-function Hero() {
+function Hero({ onBrowseProducts }) {
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(1000px_500px_at_50%_-10%,rgba(99,102,241,0.25),transparent),radial-gradient(600px_300px_at_80%_20%,rgba(236,72,153,0.2),transparent)]" />
@@ -60,7 +60,7 @@ function Hero() {
           <h1 className="mt-6 text-4xl sm:text-6xl font-bold tracking-tight text-white">Gear up fast with ZenSupply</h1>
           <p className="mt-4 text-slate-300 text-lg">Skeleton spawners, cash boosts and more. Smooth checkout, instant delivery by staff.</p>
           <div className="mt-8 flex items-center gap-3">
-            <a href="#products" className="bg-white text-slate-900 font-semibold px-4 h-10 rounded-lg flex items-center">Browse products</a>
+            <button onClick={onBrowseProducts} className="bg-white text-slate-900 font-semibold px-4 h-10 rounded-lg flex items-center hover:bg-slate-200 transition">Browse products</button>
             <a href="#faq" className="text-white/80 hover:text-white">Need help?</a>
           </div>
         </div>
@@ -79,6 +79,8 @@ function VariantSelector({ item, onConfirm }) {
     if (chosen.bundle_price) return chosen.bundle_price
     return (chosen.unit_price ?? item.price) * quantity
   }, [chosen, item, quantity])
+
+  const isMoney = item?.title === 'Money'
 
   return (
     <div className="space-y-4">
@@ -99,9 +101,18 @@ function VariantSelector({ item, onConfirm }) {
       {!chosen?.bundle_price && (
         <div className="space-y-2">
           <label className="text-sm text-slate-300">Quantity</label>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <input type="number" min={1} value={quantity} onChange={e => setQuantity(Math.max(1, Number(e.target.value)))} className="w-24 bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white" />
-            <span className="text-slate-400 text-sm">units</span>
+            <span className="text-slate-400 text-sm">{isMoney ? 'million' : 'units'}</span>
+            {isMoney && (
+              <div className="flex items-center gap-2">
+                {[5,10,25].map((q) => (
+                  <button key={q} type="button" onClick={() => setQuantity(q)} className={`h-10 px-3 rounded-lg border ${quantity===q ? 'border-fuchsia-500 text-white bg-fuchsia-500/10' : 'border-white/10 text-slate-300 hover:bg-white/5'}`}>
+                    {q}M
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -146,7 +157,7 @@ function ProductCard({ item, onAdd }) {
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-40"> 
+        <div className="fixed inset-0 z-40">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-slate-900 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
@@ -201,6 +212,25 @@ function Products({ onAdd }) {
         <ProductCard key={item.id || item.title} item={item} onAdd={onAdd} />
       ))}
     </section>
+  )
+}
+
+function ProductGalleryModal({ open, onClose, onAdd }) {
+  return (
+    <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+      <div className={`absolute inset-0 bg-black/60 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
+      <div className={`absolute left-1/2 top-1/2 w-full max-w-6xl -translate-x-1/2 -translate-y-1/2 transition-transform ${open ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+        <div className="bg-slate-950/95 backdrop-blur rounded-2xl border border-white/10 shadow-2xl">
+          <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <h3 className="text-white font-semibold">All products</h3>
+            <button onClick={onClose} className="h-10 w-10 inline-flex items-center justify-center text-slate-300 hover:text-white"><X className="h-5 w-5" /></button>
+          </div>
+          <div className="p-6 max-h-[70vh] overflow-y-auto">
+            <Products onAdd={onAdd} />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -363,6 +393,7 @@ function Footer() {
 function App() {
   const [cartOpen, setCartOpen] = useState(false)
   const [cart, setCart] = useState([])
+  const [productsModalOpen, setProductsModalOpen] = useState(false)
 
   const addToCart = (item) => {
     setCart((prev) => {
@@ -412,13 +443,14 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-200 relative">
       <div className="pointer-events-none absolute inset-0 [background:radial-gradient(600px_300px_at_20%_10%,rgba(99,102,241,0.2),transparent),radial-gradient(600px_300px_at_80%_10%,rgba(236,72,153,0.15),transparent)]" />
       <Header onCartOpen={() => setCartOpen(true)} />
-      <Hero />
+      <Hero onBrowseProducts={() => setProductsModalOpen(true)} />
       <Products onAdd={addToCart} />
       <FeedbackSection />
       <FAQ />
       <Footer />
 
       <Cart open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onCheckout={onCheckout} />
+      <ProductGalleryModal open={productsModalOpen} onClose={() => setProductsModalOpen(false)} onAdd={addToCart} />
     </div>
   )
 }
