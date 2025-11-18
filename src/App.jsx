@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ShoppingCart, Search, Menu, Flame, ChevronDown } from 'lucide-react'
+import { ShoppingCart, Search, Menu, Flame, ChevronDown, Star } from 'lucide-react'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
@@ -19,16 +19,16 @@ function Header({ onCartOpen }) {
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-slate-300">
           <a href="#products" className="hover:text-white transition-colors">Products</a>
-          <a href="#how" className="hover:text-white transition-colors">How it works</a>
+          <a href="#feedback" className="hover:text-white transition-colors">Feedback</a>
           <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
         </nav>
 
         <div className="flex items-center gap-3">
-          <button className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white text-sm px-3 py-2 rounded-lg backdrop-blur border border-white/10">
+          <button className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white text-sm px-3 h-10 rounded-lg backdrop-blur border border-white/10">
             <Search className="h-4 w-4" />
             Search
           </button>
-          <button onClick={onCartOpen} className="relative inline-flex items-center gap-2 bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white text-sm px-3 py-2 rounded-lg shadow-lg shadow-fuchsia-500/20">
+          <button onClick={onCartOpen} className="relative inline-flex items-center gap-2 bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white text-sm px-3 h-10 rounded-lg shadow-lg shadow-fuchsia-500/20">
             <ShoppingCart className="h-4 w-4" />
             Cart
           </button>
@@ -40,7 +40,7 @@ function Header({ onCartOpen }) {
       {open && (
         <div className="md:hidden px-6 pb-4 space-y-2 text-slate-300">
           <a href="#products" className="block py-2">Products</a>
-          <a href="#how" className="block py-2">How it works</a>
+          <a href="#feedback" className="block py-2">Feedback</a>
           <a href="#faq" className="block py-2">FAQ</a>
         </div>
       )}
@@ -60,7 +60,7 @@ function Hero() {
           <h1 className="mt-6 text-4xl sm:text-6xl font-bold tracking-tight text-white">Gear up fast with ZenSupply</h1>
           <p className="mt-4 text-slate-300 text-lg">Skeleton spawners, cash boosts and more. Smooth checkout, instant delivery by staff.</p>
           <div className="mt-8 flex items-center gap-3">
-            <a href="#products" className="bg-white text-slate-900 font-semibold px-4 py-2 rounded-lg">Browse products</a>
+            <a href="#products" className="bg-white text-slate-900 font-semibold px-4 h-10 rounded-lg flex items-center">Browse products</a>
             <a href="#faq" className="text-white/80 hover:text-white">Need help?</a>
           </div>
         </div>
@@ -75,10 +75,9 @@ function VariantSelector({ item, onConfirm }) {
 
   const chosen = useMemo(() => item?.variants?.find(v => v.id === variantId), [item, variantId])
   const price = useMemo(() => {
-    if (!chosen) return item.price
-    // If bundle price provided use it; else fall back to unit pricing
+    if (!chosen) return (item.price || 0) * quantity
     if (chosen.bundle_price) return chosen.bundle_price
-    return chosen.unit_price ? chosen.unit_price * quantity : item.price * quantity
+    return (chosen.unit_price ?? item.price) * quantity
   }, [chosen, item, quantity])
 
   return (
@@ -87,7 +86,7 @@ function VariantSelector({ item, onConfirm }) {
         <div className="space-y-2">
           <label className="text-sm text-slate-300">Choose variant</label>
           <div className="relative">
-            <select value={variantId} onChange={e => setVariantId(e.target.value)} className="w-full appearance-none bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white pr-8">
+            <select value={variantId} onChange={e => setVariantId(e.target.value)} className="w-full appearance-none bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white pr-8">
               {item.variants.map(v => (
                 <option key={v.id} value={v.id}>{v.label}</option>
               ))}
@@ -97,12 +96,11 @@ function VariantSelector({ item, onConfirm }) {
         </div>
       ) : null}
 
-      {/* Quantity only for non-bundle or when unit based */}
       {!chosen?.bundle_price && (
         <div className="space-y-2">
           <label className="text-sm text-slate-300">Quantity</label>
           <div className="flex items-center gap-2">
-            <input type="number" min={1} value={quantity} onChange={e => setQuantity(Math.max(1, Number(e.target.value)))} className="w-24 bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white" />
+            <input type="number" min={1} value={quantity} onChange={e => setQuantity(Math.max(1, Number(e.target.value)))} className="w-24 bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white" />
             <span className="text-slate-400 text-sm">units</span>
           </div>
         </div>
@@ -112,11 +110,11 @@ function VariantSelector({ item, onConfirm }) {
         <div className="text-white font-semibold text-lg">${price.toFixed(2)}</div>
         <button onClick={() => onConfirm({
           ...item,
-          price: chosen?.bundle_price ? chosen.bundle_price : (chosen?.unit_price || item.price),
+          price: chosen?.bundle_price ? chosen.bundle_price : (chosen?.unit_price ?? item.price),
           quantity: chosen?.bundle_price ? 1 : quantity,
           variant_id: chosen?.id || 'single',
           variant_label: chosen?.label || 'Single'
-        })} className="bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-4 py-2 rounded-lg">
+        })} className="bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-4 h-10 rounded-lg">
           Add to cart
         </button>
       </div>
@@ -144,7 +142,7 @@ function ProductCard({ item, onAdd }) {
       <p className="text-slate-300 text-sm mt-1 line-clamp-2">{item.description}</p>
       <div className="mt-3 flex items-center justify-between">
         <div className="text-white font-bold">${Number(item.price || 0).toFixed(2)}</div>
-        <button onClick={() => setOpen(true)} className="text-sm bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-3 py-1.5 rounded-lg">Select</button>
+        <button onClick={() => setOpen(true)} className="text-sm bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-3 h-10 rounded-lg">Select</button>
       </div>
 
       {open && (
@@ -153,7 +151,7 @@ function ProductCard({ item, onAdd }) {
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-slate-900 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="text-white font-semibold">{item.title}</div>
-              <button className="text-slate-400 hover:text-white" onClick={() => setOpen(false)}>Close</button>
+              <button className="text-slate-400 hover:text-white h-10" onClick={() => setOpen(false)}>Close</button>
             </div>
             <VariantSelector item={item} onConfirm={(payload) => { onAdd(payload); setOpen(false) }} />
           </div>
@@ -174,13 +172,12 @@ function Products({ onAdd }) {
         const res = await fetch(`${BACKEND_URL}/products`)
         const data = await res.json()
         setItems((data.items || []).map((p) => {
-          // Ensure only the three products and provide default variants for Skeleton Spawner
           if (p.title === 'Skeleton Spawner') {
             return {
               ...p,
               variants: p.variants || [
                 { id: 'single', label: 'Single', unit_price: p.price },
-                { id: 'shulker', label: 'Shulker (27x)', bundle_price: (p.price * 27 * 0.9) },
+                { id: 'shulker', label: 'Shulker (27x)', bundle_price: 40.0 },
               ]
             }
           }
@@ -215,7 +212,7 @@ function Cart({ open, onClose, items, onCheckout }) {
       <div className={`absolute right-0 top-0 h-full w-full max-w-md bg-slate-900 border-l border-white/10 transition-transform ${open ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-6 flex items-center justify-between border-b border-white/10">
           <div className="text-white font-semibold">Your Cart</div>
-          <button onClick={onClose} className="text-slate-300 hover:text-white">Close</button>
+          <button onClick={onClose} className="text-slate-300 hover:text-white h-10">Close</button>
         </div>
         <div className="p-6 space-y-4 overflow-y-auto h-[calc(100%-220px)]">
           {items.length === 0 ? (
@@ -250,14 +247,101 @@ function CheckoutForm({ total, onCheckout, disabled }) {
         <span className="font-bold">${total.toFixed(2)}</span>
       </div>
       <div className="grid grid-cols-1 gap-3">
-        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white" placeholder="Minecraft Username (IGN)" value={ign} onChange={e => setIgn(e.target.value)} />
-        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white" placeholder="Discord (optional)" value={discord} onChange={e => setDiscord(e.target.value)} />
-        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white" placeholder="Email for receipt (optional)" value={email} onChange={e => setEmail(e.target.value)} />
+        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white" placeholder="Minecraft Username (IGN)" value={ign} onChange={e => setIgn(e.target.value)} />
+        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white" placeholder="Discord (optional)" value={discord} onChange={e => setDiscord(e.target.value)} />
+        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white" placeholder="Email for receipt (optional)" value={email} onChange={e => setEmail(e.target.value)} />
       </div>
-      <button onClick={() => onCheckout({ ign, discord, email })} disabled={disabled || !ign} className="w-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white font-semibold py-2.5 rounded-lg disabled:opacity-50">
+      <button onClick={() => onCheckout({ ign, discord, email })} disabled={disabled || !ign} className="w-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white font-semibold h-11 rounded-lg disabled:opacity-50">
         Checkout
       </button>
     </div>
+  )
+}
+
+function FAQ() {
+  const [open, setOpen] = useState(null)
+  const faqs = [
+    { q: 'How fast is delivery?', a: 'Orders are typically fulfilled by staff within minutes. You will be contacted in-game or via Discord if provided.' },
+    { q: 'Which server is this for?', a: 'This store targets Donut SMP. We are not affiliated with Mojang or the server owners.' },
+    { q: 'What payment methods are supported?', a: 'We currently accept standard card payments through our provider. More options coming soon.' },
+  ]
+
+  return (
+    <section id="faq" className="mx-auto max-w-3xl px-6 py-12">
+      <h2 className="text-white text-2xl font-semibold">FAQ</h2>
+      <div className="mt-6 divide-y divide-white/10 rounded-xl border border-white/10 bg-white/5">
+        {faqs.map((f, i) => (
+          <div key={i} className="p-4">
+            <button onClick={() => setOpen(open === i ? null : i)} className="w-full flex items-center justify-between text-left">
+              <span className="text-white font-medium">{f.q}</span>
+              <span className="text-slate-400">{open === i ? '−' : '+'}</span>
+            </button>
+            {open === i && (
+              <p className="mt-2 text-slate-300 text-sm">{f.a}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function FeedbackSection() {
+  const [rating, setRating] = useState(0)
+  const [hover, setHover] = useState(0)
+  const [comment, setComment] = useState('')
+  const [ign, setIgn] = useState('')
+  const [status, setStatus] = useState('')
+
+  const submit = async () => {
+    if (!rating) {
+      setStatus('Please select a star rating.')
+      return
+    }
+    setStatus('')
+    try {
+      const res = await fetch(`${BACKEND_URL}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating, comment, minecraft_username: ign })
+      })
+      const data = await res.json()
+      if (data.status === 'received') {
+        setStatus('Thanks for your feedback!')
+        setRating(0)
+        setHover(0)
+        setComment('')
+        setIgn('')
+      } else {
+        setStatus('Something went wrong.')
+      }
+    } catch (e) {
+      setStatus('Failed to submit feedback.')
+    }
+  }
+
+  return (
+    <section id="feedback" className="mx-auto max-w-3xl px-6 py-12">
+      <h2 className="text-white text-2xl font-semibold">Leave a rating</h2>
+      <p className="text-slate-300 mt-2">Share your experience to help us improve.</p>
+      <div className="mt-6">
+        <div className="flex items-center gap-2">
+          {[1,2,3,4,5].map((n) => (
+            <button key={n} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => setRating(n)} className="h-10 w-10 rounded-md flex items-center justify-center bg-white/5 border border-white/10">
+              <Star className={`h-5 w-5 ${ (hover || rating) >= n ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400' }`} />
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 grid gap-3">
+          <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white" placeholder="Minecraft Username (optional)" value={ign} onChange={e => setIgn(e.target.value)} />
+          <textarea className="bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white min-h-[100px]" placeholder="Write a quick comment (optional)" value={comment} onChange={e => setComment(e.target.value)} />
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <button onClick={submit} className="bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-4 h-10 rounded-lg">Submit</button>
+          <span className="text-sm text-slate-400">{status}</span>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -330,6 +414,8 @@ function App() {
       <Header onCartOpen={() => setCartOpen(true)} />
       <Hero />
       <Products onAdd={addToCart} />
+      <FeedbackSection />
+      <FAQ />
       <Footer />
 
       <Cart open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onCheckout={onCheckout} />
