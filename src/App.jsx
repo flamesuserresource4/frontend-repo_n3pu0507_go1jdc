@@ -61,7 +61,9 @@ function Hero({ onBrowseProducts }) {
           <p className="mt-4 text-slate-300 text-lg">Skeleton spawners, cash boosts and more. Smooth checkout, instant delivery by staff.</p>
           <div className="mt-8 flex items-center gap-3">
             <button onClick={onBrowseProducts} className="bg-white text-slate-900 font-semibold px-4 h-10 rounded-lg flex items-center hover:bg-slate-200 transition">Browse products</button>
-            <a href="#faq" className="text-white/80 hover:text-white">Need help?</a>
+            <a href="https://discord.gg/K5BU46kJMY" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center px-4 h-10 rounded-lg border border-white/15 text-white/90 hover:text-white hover:bg-white/5 transition">
+              Need help?
+            </a>
           </div>
         </div>
       </div>
@@ -106,7 +108,7 @@ function VariantSelector({ item, onConfirm }) {
             <span className="text-slate-400 text-sm">{isMoney ? 'million' : 'units'}</span>
             {isMoney && (
               <div className="flex items-center gap-2">
-                {[5,10,25].map((q) => (
+                {[5,10,25,50,100].map((q) => (
                   <button key={q} type="button" onClick={() => setQuantity(q)} className={`h-10 px-3 rounded-lg border ${quantity===q ? 'border-fuchsia-500 text-white bg-fuchsia-500/10' : 'border-white/10 text-slate-300 hover:bg-white/5'}`}>
                     {q}M
                   </button>
@@ -152,7 +154,7 @@ function ProductCard({ item, onAdd }) {
       <h3 className="text-white font-semibold">{item.title}</h3>
       <p className="text-slate-300 text-sm mt-1 line-clamp-2">{item.description}</p>
       <div className="mt-3 flex items-center justify-between">
-        <div className="text-white font-bold">${Number(item.price || 0).toFixed(2)}</div>
+        <span className="inline-flex items-center h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white font-semibold">${Number(item.price || 0).toFixed(2)}</span>
         <button onClick={() => setOpen(true)} className="text-sm bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-3 h-10 rounded-lg">Select</button>
       </div>
 
