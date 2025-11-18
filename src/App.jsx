@@ -236,6 +236,69 @@ function ProductGalleryModal({ open, onClose, onAdd }) {
   )
 }
 
+function FeedbackListModal({ open, onClose }) {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const res = await fetch(`${BACKEND_URL}/feedbacks?min_rating=4`)
+        const data = await res.json()
+        setItems(data.items || [])
+      } catch (e) {
+        setError('Failed to load feedbacks')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [open])
+
+  return (
+    <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+      <div className={`absolute inset-0 bg-black/60 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
+      <div className={`absolute left-1/2 top-1/2 w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 transition-transform ${open ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+        <div className="bg-slate-950/95 backdrop-blur rounded-2xl border border-white/10 shadow-2xl">
+          <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <h3 className="text-white font-semibold">Recent 4★+ feedback</h3>
+            <button onClick={onClose} className="h-10 w-10 inline-flex items-center justify-center text-slate-300 hover:text-white"><X className="h-5 w-5" /></button>
+          </div>
+          <div className="p-6 max-h-[70vh] overflow-y-auto">
+            {loading && <div className="text-slate-300">Loading…</div>}
+            {error && <div className="text-rose-400">{error}</div>}
+            {!loading && !error && (
+              <ul className="space-y-4">
+                {items.length === 0 && (
+                  <li className="text-slate-400 text-sm">No feedback yet.</li>
+                )}
+                {items.map((f) => (
+                  <li key={f.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        {[1,2,3,4,5].map((n) => (
+                          <Star key={n} className={`h-4 w-4 ${f.rating >= n ? 'fill-yellow-400 text-yellow-400' : 'text-slate-500'}`} />
+                        ))}
+                      </div>
+                      <span className="text-xs text-slate-400">{f.created_at ? new Date(f.created_at).toLocaleString() : ''}</span>
+                    </div>
+                    {f.comment && <p className="mt-2 text-slate-200 text-sm">{f.comment}</p>}
+                    <div className="mt-2 text-xs text-slate-400">{f.minecraft_username || 'Anonymous'}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Cart({ open, onClose, items, onCheckout }) {
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
   return (
@@ -324,6 +387,7 @@ function FeedbackSection() {
   const [comment, setComment] = useState('')
   const [ign, setIgn] = useState('')
   const [status, setStatus] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
 
   const submit = async () => {
     if (!rating) {
@@ -370,9 +434,11 @@ function FeedbackSection() {
         </div>
         <div className="mt-4 flex items-center gap-3">
           <button onClick={submit} className="bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-4 h-10 rounded-lg">Submit</button>
+          <button onClick={() => setModalOpen(true)} className="px-4 h-10 rounded-lg border border-white/10 text-slate-200 hover:bg-white/5">See all feedbacks</button>
           <span className="text-sm text-slate-400">{status}</span>
         </div>
       </div>
+      <FeedbackListModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </section>
   )
 }
