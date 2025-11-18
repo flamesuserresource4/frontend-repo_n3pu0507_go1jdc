@@ -51,7 +51,7 @@ function Header({ onCartOpen }) {
 function Hero({ onBrowseProducts }) {
   return (
     <section className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(1000px_500px_at_50%_-10%,rgba(99,102,241,0.25),transparent),radial-gradient(600px_300px_at_80%_20%,rgba(236,72,153,0.2),transparent)]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(1000px_500px_at_50%_-10%,rgba(99,102,241,0.25),transparent),radial-gradient(600px_300px_at_80%_20%,rgba(236,72,153,0.2),transparent)]" />
       <div className="mx-auto max-w-7xl px-6 pt-20 pb-16">
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-200 backdrop-blur">
@@ -138,7 +138,7 @@ function VariantSelector({ item, onConfirm }) {
 function ProductCard({ item, onAdd }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 hover:bg-white/10 transition relative">
+    <div className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 hover:bg-white/10 transition relative h-full flex flex-col">
       {item.badge && (
         <div className="absolute right-3 top-3 text-[10px] uppercase bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white px-2 py-1 rounded">
           {item.badge}
@@ -153,7 +153,7 @@ function ProductCard({ item, onAdd }) {
       </div>
       <h3 className="text-white font-semibold">{item.title}</h3>
       <p className="text-slate-300 text-sm mt-1 line-clamp-2">{item.description}</p>
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-4 mt-auto flex items-center justify-between">
         <span className="inline-flex items-center h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white font-semibold">${Number(item.price || 0).toFixed(2)}</span>
         <button onClick={() => setOpen(true)} className="text-sm bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-3 h-10 rounded-lg">Select</button>
       </div>
@@ -190,7 +190,7 @@ function Products({ onAdd }) {
               ...p,
               variants: p.variants || [
                 { id: 'single', label: 'Single', unit_price: p.price },
-                { id: 'shulker', label: 'Shulker (27x)', bundle_price: 40.0 },
+                { id: 'shulker', label: 'Shulker', bundle_price: 40.0 },
               ]
             }
           }
