@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { ShoppingCart, Search, Menu, Flame } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ShoppingCart, Search, Menu, Flame, ChevronDown } from 'lucide-react'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
@@ -69,7 +69,63 @@ function Hero() {
   )
 }
 
+function VariantSelector({ item, onConfirm }) {
+  const [variantId, setVariantId] = useState(item?.variants?.[0]?.id || 'single')
+  const [quantity, setQuantity] = useState(1)
+
+  const chosen = useMemo(() => item?.variants?.find(v => v.id === variantId), [item, variantId])
+  const price = useMemo(() => {
+    if (!chosen) return item.price
+    // If bundle price provided use it; else fall back to unit pricing
+    if (chosen.bundle_price) return chosen.bundle_price
+    return chosen.unit_price ? chosen.unit_price * quantity : item.price * quantity
+  }, [chosen, item, quantity])
+
+  return (
+    <div className="space-y-4">
+      {item?.variants ? (
+        <div className="space-y-2">
+          <label className="text-sm text-slate-300">Choose variant</label>
+          <div className="relative">
+            <select value={variantId} onChange={e => setVariantId(e.target.value)} className="w-full appearance-none bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white pr-8">
+              {item.variants.map(v => (
+                <option key={v.id} value={v.id}>{v.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Quantity only for non-bundle or when unit based */}
+      {!chosen?.bundle_price && (
+        <div className="space-y-2">
+          <label className="text-sm text-slate-300">Quantity</label>
+          <div className="flex items-center gap-2">
+            <input type="number" min={1} value={quantity} onChange={e => setQuantity(Math.max(1, Number(e.target.value)))} className="w-24 bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white" />
+            <span className="text-slate-400 text-sm">units</span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <div className="text-white font-semibold text-lg">${price.toFixed(2)}</div>
+        <button onClick={() => onConfirm({
+          ...item,
+          price: chosen?.bundle_price ? chosen.bundle_price : (chosen?.unit_price || item.price),
+          quantity: chosen?.bundle_price ? 1 : quantity,
+          variant_id: chosen?.id || 'single',
+          variant_label: chosen?.label || 'Single'
+        })} className="bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-4 py-2 rounded-lg">
+          Add to cart
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ProductCard({ item, onAdd }) {
+  const [open, setOpen] = useState(false)
   return (
     <div className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 hover:bg-white/10 transition relative">
       {item.badge && (
@@ -87,9 +143,22 @@ function ProductCard({ item, onAdd }) {
       <h3 className="text-white font-semibold">{item.title}</h3>
       <p className="text-slate-300 text-sm mt-1 line-clamp-2">{item.description}</p>
       <div className="mt-3 flex items-center justify-between">
-        <div className="text-white font-bold">${item.price.toFixed(2)}</div>
-        <button onClick={() => onAdd(item)} className="text-sm bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-3 py-1.5 rounded-lg">Add</button>
+        <div className="text-white font-bold">${Number(item.price || 0).toFixed(2)}</div>
+        <button onClick={() => setOpen(true)} className="text-sm bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-3 py-1.5 rounded-lg">Select</button>
       </div>
+
+      {open && (
+        <div className="fixed inset-0 z-40"> 
+          <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-slate-900 border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-white font-semibold">{item.title}</div>
+              <button className="text-slate-400 hover:text-white" onClick={() => setOpen(false)}>Close</button>
+            </div>
+            <VariantSelector item={item} onConfirm={(payload) => { onAdd(payload); setOpen(false) }} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -104,7 +173,19 @@ function Products({ onAdd }) {
       try {
         const res = await fetch(`${BACKEND_URL}/products`)
         const data = await res.json()
-        setItems(data.items || [])
+        setItems((data.items || []).map((p) => {
+          // Ensure only the three products and provide default variants for Skeleton Spawner
+          if (p.title === 'Skeleton Spawner') {
+            return {
+              ...p,
+              variants: p.variants || [
+                { id: 'single', label: 'Single', unit_price: p.price },
+                { id: 'shulker', label: 'Shulker (27x)', bundle_price: (p.price * 27 * 0.9) },
+              ]
+            }
+          }
+          return p
+        }))
       } catch (e) {
         setError('Failed to load products')
       } finally {
@@ -136,14 +217,14 @@ function Cart({ open, onClose, items, onCheckout }) {
           <div className="text-white font-semibold">Your Cart</div>
           <button onClick={onClose} className="text-slate-300 hover:text-white">Close</button>
         </div>
-        <div className="p-6 space-y-4 overflow-y-auto h-[calc(100%-160px)]">
+        <div className="p-6 space-y-4 overflow-y-auto h-[calc(100%-220px)]">
           {items.length === 0 ? (
             <div className="text-slate-400 text-sm">No items yet. Add some goodies!</div>
           ) : (
             items.map((it, idx) => (
               <div key={idx} className="flex items-center justify-between text-slate-200">
                 <div>
-                  <div className="font-medium">{it.title}</div>
+                  <div className="font-medium">{it.title}{it.variant_label ? ` • ${it.variant_label}` : ''}</div>
                   <div className="text-xs text-slate-400">x{it.quantity}</div>
                 </div>
                 <div className="font-semibold">${(it.price * it.quantity).toFixed(2)}</div>
@@ -151,16 +232,31 @@ function Cart({ open, onClose, items, onCheckout }) {
             ))
           )}
         </div>
-        <div className="p-6 border-t border-white/10 space-y-3">
-          <div className="flex items-center justify-between text-white">
-            <span>Total</span>
-            <span className="font-bold">${total.toFixed(2)}</span>
-          </div>
-          <button onClick={onCheckout} disabled={!items.length} className="w-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white font-semibold py-2.5 rounded-lg disabled:opacity-50">
-            Checkout
-          </button>
-        </div>
+        <CheckoutForm total={total} onCheckout={onCheckout} disabled={!items.length} />
       </div>
+    </div>
+  )
+}
+
+function CheckoutForm({ total, onCheckout, disabled }) {
+  const [ign, setIgn] = useState('')
+  const [discord, setDiscord] = useState('')
+  const [email, setEmail] = useState('')
+
+  return (
+    <div className="p-6 border-t border-white/10 space-y-3">
+      <div className="flex items-center justify-between text-white">
+        <span>Total</span>
+        <span className="font-bold">${total.toFixed(2)}</span>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white" placeholder="Minecraft Username (IGN)" value={ign} onChange={e => setIgn(e.target.value)} />
+        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white" placeholder="Discord (optional)" value={discord} onChange={e => setDiscord(e.target.value)} />
+        <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white" placeholder="Email for receipt (optional)" value={email} onChange={e => setEmail(e.target.value)} />
+      </div>
+      <button onClick={() => onCheckout({ ign, discord, email })} disabled={disabled || !ign} className="w-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white font-semibold py-2.5 rounded-lg disabled:opacity-50">
+        Checkout
+      </button>
     </div>
   )
 }
@@ -186,24 +282,29 @@ function App() {
 
   const addToCart = (item) => {
     setCart((prev) => {
-      const existing = prev.find((p) => p.title === item.title)
+      const key = `${item.title}-${item.variant_id || 'single'}`
+      const existing = prev.find((p) => `${p.title}-${p.variant_id || 'single'}` === key)
       if (existing) {
-        return prev.map((p) => p.title === item.title ? { ...p, quantity: p.quantity + 1 } : p)
+        return prev.map((p) => `${p.title}-${p.variant_id || 'single'}` === key ? { ...p, quantity: p.quantity + item.quantity } : p)
       }
-      return [...prev, { ...item, quantity: 1 }]
+      return [...prev, { ...item }]
     })
     setCartOpen(true)
   }
 
-  const checkout = async () => {
+  const onCheckout = async ({ ign, discord, email }) => {
     const items = cart.map(c => ({
       product_id: c.id || c.title,
-      name: c.title,
+      name: `${c.title}${c.variant_label ? ' • ' + c.variant_label : ''}`,
       price: c.price,
       quantity: c.quantity,
+      variant_id: c.variant_id,
+      variant_label: c.variant_label,
     }))
     const payload = {
-      minecraft_username: 'YourIGN',
+      minecraft_username: ign,
+      discord,
+      email,
       items,
     }
     try {
@@ -213,7 +314,11 @@ function App() {
         body: JSON.stringify(payload)
       })
       const data = await res.json()
-      alert(data.status === 'received' ? `Order placed! ID: ${data.order_id}` : 'Order failed')
+      if (data.status === 'received') {
+        alert(`Order placed! ID: ${data.order_id}`)
+      } else {
+        alert('Order failed')
+      }
     } catch (e) {
       alert('Checkout failed')
     }
@@ -227,7 +332,7 @@ function App() {
       <Products onAdd={addToCart} />
       <Footer />
 
-      <Cart open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onCheckout={checkout} />
+      <Cart open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onCheckout={onCheckout} />
     </div>
   )
 }
