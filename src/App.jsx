@@ -161,8 +161,8 @@ function ProductCard({ item, onAdd }) {
         )}
       </div>
       <h3 className="text-white font-semibold">{item.title}</h3>
-      <p className="text-slate-300 text-sm mt-1 line-clamp-2">{item.description}</p>
-      <div className="mt-4 mt-auto flex items-center justify-between">
+      <p className="text-slate-300 text-sm mt-2 line-clamp-2">{item.description}</p>
+      <div className="mt-5 flex items-center justify-between">
         <span className="inline-flex items-center h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white font-semibold">${Number(item.price || 0).toFixed(2)}</span>
         <button onClick={() => setOpen(true)} className="text-sm bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-3 h-10 rounded-lg">Select</button>
       </div>
@@ -209,7 +209,7 @@ function Products({ onAdd, query = '' }) {
               ...augmented,
               variants: [
                 { id: 'single', label: 'Single', unit_price: unit },
-                { id: 'shulker', label: 'Shulker', bundle_price: 40.0 },
+                { id: 'shulker', label: 'Shulker (1728 Skellys)', bundle_price: 40.0 },
               ],
               description: 'Cheap Skeleton Spawners, non duped!',
               image: augmented.image || 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/4/40/Spawner_JE3.png',
@@ -221,8 +221,8 @@ function Products({ onAdd, query = '' }) {
             augmented = {
               ...augmented,
               description: 'In-game Money for just 0.03$ per Million.',
-              image: augmented.image || 'https://static.wixstatic.com/media/79eca2_232cfc6d690e4e40a6360d8bdd39495f~mv2.gif',
-              backupImage: 'https://upload.wikimedia.org/wikipedia/commons/5/5a/Us_dollar_sign.svg'
+              image: 'https://images.unsplash.com/photo-1635840420670-5470266ffa39?ixid=M3w3OTkxMTl8MHwxfHNlYXJjaHwxfHxJbi1nYW1lJTIwTW9uZXklMjBmb3IlMjBqdXN0fGVufDB8MHx8fDE3NjM1NjY4MDZ8MA&ixlib=rb-4.1.0&w=1600&auto=format&fit=crop&q=80',
+              backupImage: 'https://static.wixstatic.com/media/79eca2_232cfc6d690e4e40a6360d8bdd39495f~mv2.gif'
             }
           }
 
@@ -230,8 +230,8 @@ function Products({ onAdd, query = '' }) {
             augmented = {
               ...augmented,
               description: 'Elytra for just 12$',
-              image: augmented.image || 'https://cdn.apexminecrafthosting.com/img/uploads/2022/03/28151238/elytra.png',
-              backupImage: 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/0/05/Elytra_%28item%29_JE2_BE2.png'
+              image: 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/0/05/Elytra_%28item%29_JE2_BE2.png',
+              backupImage: 'https://cdn.apexminecrafthosting.com/img/uploads/2022/03/28151238/elytra.png'
             }
           }
 
