@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { ShoppingCart, Search, Menu, Flame, ChevronDown, Star, X } from 'lucide-react'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
-function Header({ onCartOpen }) {
+function Header({ onCartOpen, onSearchOpen }) {
   const [open, setOpen] = useState(false)
   return (
     <header className="relative z-20">
@@ -24,7 +24,7 @@ function Header({ onCartOpen }) {
         </nav>
 
         <div className="flex items-center gap-3">
-          <button className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white text-sm px-3 h-10 rounded-lg backdrop-blur border border-white/10">
+          <button onClick={onSearchOpen} className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white text-sm px-3 h-10 rounded-lg backdrop-blur border border-white/10">
             <Search className="h-4 w-4" />
             Search
           </button>
@@ -174,7 +174,7 @@ function ProductCard({ item, onAdd }) {
   )
 }
 
-function Products({ onAdd }) {
+function Products({ onAdd, query = '' }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -208,9 +208,21 @@ function Products({ onAdd }) {
   if (loading) return <div className="text-slate-300">Loading products…</div>
   if (error) return <div className="text-rose-400">{error}</div>
 
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? items.filter((it) =>
+        (it.title || '').toLowerCase().includes(q) ||
+        (it.description || '').toLowerCase().includes(q) ||
+        (it.category || '').toLowerCase().includes(q)
+      )
+    : items
+
   return (
     <section id="products" className="mx-auto max-w-7xl px-6 py-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((item) => (
+      {filtered.length === 0 && (
+        <div className="col-span-full text-slate-400">No products match “{query}”.</div>
+      )}
+      {filtered.map((item) => (
         <ProductCard key={item.id || item.title} item={item} onAdd={onAdd} />
       ))}
     </section>
@@ -229,6 +241,39 @@ function ProductGalleryModal({ open, onClose, onAdd }) {
           </div>
           <div className="p-6 max-h-[70vh] overflow-y-auto">
             <Products onAdd={onAdd} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SearchModal({ open, onClose, onAdd }) {
+  const [query, setQuery] = useState('')
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (open && inputRef.current) {
+      // slight delay to ensure mount before focus
+      setTimeout(() => inputRef.current?.focus(), 50)
+    }
+    if (!open) setQuery('')
+  }, [open])
+
+  return (
+    <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+      <div className={`absolute inset-0 bg-black/60 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
+      <div className={`absolute left-1/2 top-1/2 w-full max-w-6xl -translate-x-1/2 -translate-y-1/2 transition-transform ${open ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+        <div className="bg-slate-950/95 backdrop-blur rounded-2xl border border-white/10 shadow-2xl">
+          <div className="p-4 border-b border-white/10 flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-1 bg-white/5 border border-white/10 rounded-lg px-3 h-11">
+              <Search className="h-4 w-4 text-slate-300" />
+              <input ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search products…" className="flex-1 bg-transparent text-white outline-none placeholder:text-slate-400" />
+            </div>
+            <button onClick={onClose} className="h-10 w-10 inline-flex items-center justify-center text-slate-300 hover:text-white"><X className="h-5 w-5" /></button>
+          </div>
+          <div className="max-h-[70vh] overflow-y-auto">
+            <Products onAdd={onAdd} query={query} />
           </div>
         </div>
       </div>
@@ -333,7 +378,7 @@ function Cart({ open, onClose, items, onCheckout }) {
           <div className="text-white font-semibold">Your Cart</div>
           <button onClick={onClose} className="text-slate-300 hover:text-white h-10">Close</button>
         </div>
-        <div className="p-6 space-y-4 overflow-y-auto h-[calc(100%-220px)]">
+        <div className="p-6 space-y-4 overflow-y-auto h-[calc(100%-260px)]">
           {items.length === 0 ? (
             <div className="text-slate-400 text-sm">No items yet. Add some goodies!</div>
           ) : (
@@ -486,6 +531,7 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false)
   const [cart, setCart] = useState([])
   const [productsModalOpen, setProductsModalOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const addToCart = (item) => {
     setCart((prev) => {
@@ -534,7 +580,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 relative">
       <div className="pointer-events-none absolute inset-0 [background:radial-gradient(600px_300px_at_20%_10%,rgba(99,102,241,0.2),transparent),radial-gradient(600px_300px_at_80%_10%,rgba(236,72,153,0.15),transparent)]" />
-      <Header onCartOpen={() => setCartOpen(true)} />
+      <Header onCartOpen={() => setCartOpen(true)} onSearchOpen={() => setSearchOpen(true)} />
       <Hero onBrowseProducts={() => setProductsModalOpen(true)} />
       <Products onAdd={addToCart} />
       <FeedbackSection />
@@ -543,6 +589,7 @@ function App() {
 
       <Cart open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onCheckout={onCheckout} />
       <ProductGalleryModal open={productsModalOpen} onClose={() => setProductsModalOpen(false)} onAdd={addToCart} />
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} onAdd={addToCart} />
     </div>
   )
 }
