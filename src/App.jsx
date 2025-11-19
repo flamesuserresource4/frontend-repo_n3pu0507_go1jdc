@@ -3,6 +3,9 @@ import { ShoppingCart, Search, Menu, Flame, ChevronDown, Star, X } from 'lucide-
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
+// Simple in-memory cache to avoid refetching products when components remount
+let PRODUCTS_CACHE = null
+
 function Header({ onCartOpen, onSearchOpen }) {
   const [open, setOpen] = useState(false)
   return (
@@ -155,7 +158,7 @@ function ProductCard({ item, onAdd }) {
       )}
       <div className="aspect-video rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 mb-3 flex items-center justify-center text-slate-400 text-sm overflow-hidden">
         {item.image ? (
-          <img src={item.image} data-backup={item.backupImage || ''} alt={item.title} referrerPolicy="no-referrer" loading="lazy" onError={onImgError} className="h-full w-full object-contain bg-slate-900/30" />
+          <img src={item.image} data-backup={item.backupImage || ''} alt={item.title} referrerPolicy="no-referrer" loading="lazy" decoding="async" fetchPriority="low" onError={onImgError} className="h-full w-full object-contain bg-slate-900/30" />
         ) : (
           <span>{item.category}</span>
         )}
@@ -194,16 +197,29 @@ function Products({ onAdd, query = '' }) {
 
     const load = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/products`)
+        // Use sessionStorage/in-memory cache to speed up subsequent mounts
+        if (!PRODUCTS_CACHE) {
+          try {
+            const cached = sessionStorage.getItem('productsCache')
+            if (cached) PRODUCTS_CACHE = JSON.parse(cached)
+          } catch {}
+        }
+        if (PRODUCTS_CACHE) {
+          setItems(PRODUCTS_CACHE)
+          setLoading(false)
+          return
+        }
+
+        const res = await fetch(`${BACKEND_URL}/products`, { cache: 'no-store' })
         const data = await res.json()
-        setItems((data.items || []).map((p) => {
+        const processed = (data.items || []).map((p) => {
           let augmented = { ...p }
 
           // Normalize titles to remove "(27x)" artifacts specifically
           augmented.title = sanitizeTitle(augmented.title)
 
           if (augmented.title === 'Skeleton Spawner') {
-            // Standardize variants to ensure no "(27x)" suffix appears
+            // Standardize variants and add context label
             const unit = augmented.price
             augmented = {
               ...augmented,
@@ -221,7 +237,7 @@ function Products({ onAdd, query = '' }) {
             augmented = {
               ...augmented,
               description: 'In-game Money for just 0.03$ per Million.',
-              image: 'https://images.unsplash.com/photo-1635840420670-5470266ffa39?ixid=M3w3OTkxMTl8MHwxfHNlYXJjaHwxfHxJbi1nYW1lJTIwTW9uZXklMjBmb3IlMjBqdXN0fGVufDB8MHx8fDE3NjM1NjY4MDZ8MA&ixlib=rb-4.1.0&w=1600&auto=format&fit=crop&q=80',
+              image: 'https://1drv.ms/i/c/b4f827d58499af99/EcV3wbBeQ3dKvKV7sbVe6BEBQZyjTvw4bLhPltCad1ISsQ?e=NtBfAA',
               backupImage: 'https://static.wixstatic.com/media/79eca2_232cfc6d690e4e40a6360d8bdd39495f~mv2.gif'
             }
           }
@@ -230,8 +246,8 @@ function Products({ onAdd, query = '' }) {
             augmented = {
               ...augmented,
               description: 'Elytra for just 12$',
-              image: 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/0/05/Elytra_%28item%29_JE2_BE2.png',
-              backupImage: 'https://cdn.apexminecrafthosting.com/img/uploads/2022/03/28151238/elytra.png'
+              image: 'https://1drv.ms/i/c/b4f827d58499af99/EQLobdR2pa5OisQKP6tDM44BkigUPNQGbNV5QSfsBaEuew?e=ecpmYF',
+              backupImage: 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/0/05/Elytra_%28item%29_JE2_BE2.png'
             }
           }
 
@@ -244,7 +260,11 @@ function Products({ onAdd, query = '' }) {
           }
 
           return augmented
-        }))
+        })
+
+        setItems(processed)
+        PRODUCTS_CACHE = processed
+        try { sessionStorage.setItem('productsCache', JSON.stringify(processed)) } catch {}
       } catch (e) {
         setError('Failed to load products')
       } finally {
@@ -254,7 +274,24 @@ function Products({ onAdd, query = '' }) {
     load()
   }, [])
 
-  if (loading) return <div className="text-slate-300">Loading products…</div>
+  if (loading) {
+    return (
+      <section id="products" className="mx-auto max-w-7xl px-6 py-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-pulse">
+            <div className="aspect-video rounded-xl bg-slate-800/70 mb-3" />
+            <div className="h-4 bg-slate-800/70 rounded w-2/3" />
+            <div className="h-3 bg-slate-800/70 rounded w-full mt-2" />
+            <div className="h-3 bg-slate-800/70 rounded w-5/6 mt-1" />
+            <div className="mt-5 flex items-center justify-between">
+              <div className="h-10 w-20 bg-slate-800/70 rounded" />
+              <div className="h-10 w-20 bg-slate-800/70 rounded" />
+            </div>
+          </div>
+        ))}
+      </section>
+    )
+  }
   if (error) return <div className="text-rose-400">{error}</div>
 
   const q = query.trim().toLowerCase()
