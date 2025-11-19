@@ -240,7 +240,9 @@ function FeedbackListModal({ open, onClose }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [preset, setPreset] = useState('small') // 'small' | 'mid' | 'large'
+  const [preset, setPreset] = useState(() => {
+    return localStorage.getItem('feedbackPreset') || 'mid'
+  }) // 'small' | 'mid' | 'large'
 
   useEffect(() => {
     if (!open) return
@@ -263,6 +265,11 @@ function FeedbackListModal({ open, onClose }) {
   const modalMaxWidth = preset === 'large' ? 'max-w-7xl' : preset === 'mid' ? 'max-w-5xl' : 'max-w-3xl'
   const gridCols = preset === 'large' ? 'grid-cols-3' : preset === 'mid' ? 'grid-cols-2' : 'grid-cols-1'
 
+  const changePreset = (p) => {
+    setPreset(p)
+    try { localStorage.setItem('feedbackPreset', p) } catch {}
+  }
+
   return (
     <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
       <div className={`absolute inset-0 bg-black/60 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
@@ -275,7 +282,7 @@ function FeedbackListModal({ open, onClose }) {
                 {['small','mid','large'].map((p) => (
                   <button
                     key={p}
-                    onClick={() => setPreset(p)}
+                    onClick={() => changePreset(p)}
                     className={`px-3 h-10 text-sm ${preset===p ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10'}`}
                   >
                     {p === 'small' ? 'Small' : p === 'mid' ? 'Mid' : 'Large'}
@@ -294,7 +301,7 @@ function FeedbackListModal({ open, onClose }) {
                   <li className="text-slate-400 text-sm">No feedback yet.</li>
                 )}
                 {items.map((f) => (
-                  <li key={f.id} className={`rounded-xl border border-white/10 bg-white/5 ${preset==='large' ? 'p-6' : 'p-4'}`}>
+                  <li key={f.id} className={`rounded-xl border border-white/10 bg-white/5 p-4`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         {[1,2,3,4,5].map((n) => (
@@ -303,7 +310,7 @@ function FeedbackListModal({ open, onClose }) {
                       </div>
                       <span className="text-xs text-slate-400">{f.created_at ? new Date(f.created_at).toLocaleString() : ''}</span>
                     </div>
-                    {f.comment && <p className={`mt-2 text-slate-200 ${preset==='large' ? 'text-base' : 'text-sm'}`}>{f.comment}</p>}
+                    {f.comment && <p className={`mt-2 text-slate-200 text-sm`}>{f.comment}</p>}
                     <div className="mt-2 text-xs text-slate-400">{f.minecraft_username || 'Anonymous'}</div>
                   </li>
                 ))}
