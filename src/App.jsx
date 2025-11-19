@@ -58,7 +58,7 @@ function Hero({ onBrowseProducts }) {
             Donut SMP IRL Store
           </div>
           <h1 className="mt-6 text-4xl sm:text-6xl font-bold tracking-tight text-white">Gear up fast with ZenSupply</h1>
-          <p className="mt-4 text-slate-300 text-lg">Skeleton spawners, cash boosts and more. Smooth checkout, instant delivery by staff.</p>
+          <p className="mt-4 text-slate-300 text-lg">Skeleton spawners, Money and more. Fast Checkout, rapid delivery and 24/7 Support.</p>
           <div className="mt-8 flex items-center gap-3">
             <button onClick={onBrowseProducts} className="bg-white text-slate-900 font-semibold px-4 h-10 rounded-lg flex items-center hover:bg-slate-200 transition">Browse products</button>
             <a href="https://discord.gg/K5BU46kJMY" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center px-4 h-10 rounded-lg border border-white/15 text-white/90 hover:text-white hover:bg-white/5 transition">
