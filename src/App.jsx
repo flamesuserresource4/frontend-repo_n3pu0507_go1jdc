@@ -240,6 +240,7 @@ function FeedbackListModal({ open, onClose }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [preset, setPreset] = useState('small') // 'small' | 'mid' | 'large'
 
   useEffect(() => {
     if (!open) return
@@ -259,25 +260,41 @@ function FeedbackListModal({ open, onClose }) {
     load()
   }, [open])
 
+  const modalMaxWidth = preset === 'large' ? 'max-w-7xl' : preset === 'mid' ? 'max-w-5xl' : 'max-w-3xl'
+  const gridCols = preset === 'large' ? 'grid-cols-3' : preset === 'mid' ? 'grid-cols-2' : 'grid-cols-1'
+
   return (
     <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
       <div className={`absolute inset-0 bg-black/60 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
-      <div className={`absolute left-1/2 top-1/2 w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 transition-transform ${open ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+      <div className={`absolute left-1/2 top-1/2 w-full ${modalMaxWidth} -translate-x-1/2 -translate-y-1/2 transition-transform ${open ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
         <div className="bg-slate-950/95 backdrop-blur rounded-2xl border border-white/10 shadow-2xl">
           <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h3 className="text-white font-semibold">Recent 4★+ feedback</h3>
-            <button onClick={onClose} className="h-10 w-10 inline-flex items-center justify-center text-slate-300 hover:text-white"><X className="h-5 w-5" /></button>
+            <h3 className="text-white font-semibold">Recent Feedback</h3>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex rounded-lg border border-white/10 overflow-hidden">
+                {['small','mid','large'].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPreset(p)}
+                    className={`px-3 h-10 text-sm ${preset===p ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10'}`}
+                  >
+                    {p === 'small' ? 'Small' : p === 'mid' ? 'Mid' : 'Large'}
+                  </button>
+                ))}
+              </div>
+              <button onClick={onClose} className="h-10 w-10 inline-flex items-center justify-center text-slate-300 hover:text-white"><X className="h-5 w-5" /></button>
+            </div>
           </div>
           <div className="p-6 max-h-[70vh] overflow-y-auto">
             {loading && <div className="text-slate-300">Loading…</div>}
             {error && <div className="text-rose-400">{error}</div>}
             {!loading && !error && (
-              <ul className="space-y-4">
+              <ul className={`grid gap-4 ${gridCols}`}>
                 {items.length === 0 && (
                   <li className="text-slate-400 text-sm">No feedback yet.</li>
                 )}
                 {items.map((f) => (
-                  <li key={f.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <li key={f.id} className={`rounded-xl border border-white/10 bg-white/5 ${preset==='large' ? 'p-6' : 'p-4'}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         {[1,2,3,4,5].map((n) => (
@@ -286,7 +303,7 @@ function FeedbackListModal({ open, onClose }) {
                       </div>
                       <span className="text-xs text-slate-400">{f.created_at ? new Date(f.created_at).toLocaleString() : ''}</span>
                     </div>
-                    {f.comment && <p className="mt-2 text-slate-200 text-sm">{f.comment}</p>}
+                    {f.comment && <p className={`mt-2 text-slate-200 ${preset==='large' ? 'text-base' : 'text-sm'}`}>{f.comment}</p>}
                     <div className="mt-2 text-xs text-slate-400">{f.minecraft_username || 'Anonymous'}</div>
                   </li>
                 ))}
