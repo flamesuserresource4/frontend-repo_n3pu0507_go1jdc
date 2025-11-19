@@ -144,9 +144,9 @@ function ProductCard({ item, onAdd }) {
           {item.badge}
         </div>
       )}
-      <div className="aspect-video rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 mb-3 flex items-center justify-center text-slate-400 text-sm">
+      <div className="aspect-video rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 mb-3 flex items-center justify-center text-slate-400 text-sm overflow-hidden">
         {item.image ? (
-          <img src={item.image} alt={item.title} className="h-full w-full object-cover rounded-xl" />
+          <img src={item.image} alt={item.title} className="h-full w-full object-contain bg-slate-900/30" />
         ) : (
           <span>{item.category}</span>
         )}
@@ -185,16 +185,30 @@ function Products({ onAdd, query = '' }) {
         const res = await fetch(`${BACKEND_URL}/products`)
         const data = await res.json()
         setItems((data.items || []).map((p) => {
-          if (p.title === 'Skeleton Spawner') {
-            return {
-              ...p,
-              variants: p.variants || [
-                { id: 'single', label: 'Single', unit_price: p.price },
+          let augmented = { ...p }
+          if (augmented.title === 'Skeleton Spawner') {
+            augmented = {
+              ...augmented,
+              variants: augmented.variants || [
+                { id: 'single', label: 'Single', unit_price: augmented.price },
                 { id: 'shulker', label: 'Shulker', bundle_price: 40.0 },
-              ]
+              ],
+              image: augmented.image || 'https://gamepedia.cursecdn.com/minecraft_gamepedia/4/40/Spawner_JE3.png'
             }
           }
-          return p
+          if (augmented.title === 'Money') {
+            augmented = {
+              ...augmented,
+              image: augmented.image || 'https://static.wixstatic.com/media/79eca2_232cfc6d690e4e40a6360d8bdd39495f~mv2.gif'
+            }
+          }
+          if (augmented.title === 'Elytra') {
+            augmented = {
+              ...augmented,
+              image: augmented.image || 'https://cdn.apexminecrafthosting.com/img/uploads/2022/03/28151238/elytra.png'
+            }
+          }
+          return augmented
         }))
       } catch (e) {
         setError('Failed to load products')
@@ -254,7 +268,6 @@ function SearchModal({ open, onClose, onAdd }) {
 
   useEffect(() => {
     if (open && inputRef.current) {
-      // slight delay to ensure mount before focus
       setTimeout(() => inputRef.current?.focus(), 50)
     }
     if (!open) setQuery('')
@@ -374,26 +387,30 @@ function Cart({ open, onClose, items, onCheckout }) {
     <div className={`fixed inset-0 z-30 ${open ? '' : 'pointer-events-none'}`}>
       <div className={`absolute inset-0 bg-black/60 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
       <div className={`absolute right-0 top-0 h-full w-full max-w-md bg-slate-900 border-l border-white/10 transition-transform ${open ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="p-6 flex items-center justify-between border-b border-white/10">
-          <div className="text-white font-semibold">Your Cart</div>
-          <button onClick={onClose} className="text-slate-300 hover:text-white h-10">Close</button>
-        </div>
-        <div className="p-6 space-y-4 overflow-y-auto h-[calc(100%-260px)]">
-          {items.length === 0 ? (
-            <div className="text-slate-400 text-sm">No items yet. Add some goodies!</div>
-          ) : (
-            items.map((it, idx) => (
-              <div key={idx} className="flex items-center justify-between text-slate-200">
-                <div>
-                  <div className="font-medium">{it.title}{it.variant_label ? ` • ${it.variant_label}` : ''}</div>
-                  <div className="text-xs text-slate-400">x{it.quantity}</div>
+        <div className="h-full flex flex-col">
+          <div className="p-6 flex items-center justify-between border-b border-white/10 shrink-0">
+            <div className="text-white font-semibold">Your Cart</div>
+            <button onClick={onClose} className="text-slate-300 hover:text-white h-10">Close</button>
+          </div>
+          <div className="p-6 space-y-4 overflow-y-auto flex-1">
+            {items.length === 0 ? (
+              <div className="text-slate-400 text-sm">No items yet. Add some goodies!</div>
+            ) : (
+              items.map((it, idx) => (
+                <div key={idx} className="flex items-center justify-between text-slate-200">
+                  <div>
+                    <div className="font-medium">{it.title}{it.variant_label ? ` • ${it.variant_label}` : ''}</div>
+                    <div className="text-xs text-slate-400">x{it.quantity}</div>
+                  </div>
+                  <div className="font-semibold">${(it.price * it.quantity).toFixed(2)}</div>
                 </div>
-                <div className="font-semibold">${(it.price * it.quantity).toFixed(2)}</div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
+          <div className="shrink-0">
+            <CheckoutForm total={total} onCheckout={onCheckout} disabled={!items.length} />
+          </div>
         </div>
-        <CheckoutForm total={total} onCheckout={onCheckout} disabled={!items.length} />
       </div>
     </div>
   )
@@ -405,7 +422,7 @@ function CheckoutForm({ total, onCheckout, disabled }) {
   const [email, setEmail] = useState('')
 
   return (
-    <div className="p-6 border-t border-white/10 space-y-3">
+    <div className="p-6 border-t border-white/10 space-y-3 bg-slate-900">
       <div className="flex items-center justify-between text-white">
         <span>Total</span>
         <span className="font-bold">${total.toFixed(2)}</span>
