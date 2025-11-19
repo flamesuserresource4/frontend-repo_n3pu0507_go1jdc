@@ -358,7 +358,7 @@ function FAQ() {
   const faqs = [
     { q: 'How fast is delivery?', a: 'Orders are typically fulfilled by staff within minutes. You will be contacted in-game or via Discord if provided.' },
     { q: 'Which server is this for?', a: 'This store targets Donut SMP. We are not affiliated with Mojang or the server owners.' },
-    { q: 'What payment methods are supported?', a: 'We currently accept standard card payments through our provider. More options coming soon.' },
+    { q: 'What payment methods are supported?', a: 'We accept a variety of different payment methods like Paypal, Card, Crypto and alot more! Head to Checkout in order to see for yourself!' },
   ]
 
   return (
