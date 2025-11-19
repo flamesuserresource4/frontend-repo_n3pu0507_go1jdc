@@ -106,11 +106,11 @@ function VariantSelector({ item, onConfirm }) {
       {!chosen?.bundle_price && (
         <div className="space-y-2">
           <label className="text-sm text-slate-300">Quantity</label>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap pr-2">
             <input type="number" min={1} value={quantity} onChange={e => setQuantity(Math.max(1, Number(e.target.value)))} className="w-24 bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white" />
             <span className="text-slate-400 text-sm">{isMoney ? 'million' : 'units'}</span>
             {isMoney && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pr-2">
                 {[5,10,25,50,100].map((q) => (
                   <button key={q} type="button" onClick={() => setQuantity(q)} className={`h-10 px-3 rounded-lg border ${quantity===q ? 'border-fuchsia-500 text-white bg-fuchsia-500/10' : 'border-white/10 text-slate-300 hover:bg-white/5'}`}>
                     {q}M
@@ -468,15 +468,31 @@ function Cart({ open, onClose, items, onCheckout }) {
             {items.length === 0 ? (
               <div className="text-slate-400 text-sm">No items yet. Add some goodies!</div>
             ) : (
-              items.map((it, idx) => (
-                <div key={idx} className="flex items-center justify-between text-slate-200">
-                  <div>
-                    <div className="font-medium">{it.title}{it.variant_label ? ` • ${it.variant_label}` : ''}</div>
-                    <div className="text-xs text-slate-400">x{it.quantity}</div>
-                  </div>
-                  <div className="font-semibold">${(it.price * it.quantity).toFixed(2)}</div>
-                </div>
-              ))
+              <ul className="space-y-3">
+                {items.map((it, idx) => (
+                  <li key={idx} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-14 w-14 rounded-lg bg-slate-800/60 border border-white/10 overflow-hidden flex items-center justify-center">
+                        {it.image ? (
+                          <img src={it.image} alt={it.title} className="h-full w-full object-contain" />
+                        ) : (
+                          <span className="text-xs text-slate-400">{it.category || 'Item'}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="text-white font-medium truncate">{it.title}</div>
+                          {it.variant_label && (
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-slate-200 border border-white/10 whitespace-nowrap">{it.variant_label}</span>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-400">Qty: {it.quantity} • ${Number(it.price).toFixed(2)} each</div>
+                      </div>
+                      <div className="text-white font-semibold whitespace-nowrap">${(it.price * it.quantity).toFixed(2)}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
           <div className="shrink-0">
@@ -536,83 +552,6 @@ function FAQ() {
         ))}
       </div>
     </section>
-  )
-}
-
-function FeedbackSection() {
-  const [rating, setRating] = useState(0)
-  const [hover, setHover] = useState(0)
-  const [comment, setComment] = useState('')
-  const [ign, setIgn] = useState('')
-  const [status, setStatus] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-
-  const submit = async () => {
-    if (!rating) {
-      setStatus('Please select a star rating.')
-      return
-    }
-    setStatus('')
-    try {
-      const res = await fetch(`${BACKEND_URL}/feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating, comment, minecraft_username: ign })
-      })
-      const data = await res.json()
-      if (data.status === 'received') {
-        setStatus('Thanks for your feedback!')
-        setRating(0)
-        setHover(0)
-        setComment('')
-        setIgn('')
-      } else {
-        setStatus('Something went wrong.')
-      }
-    } catch (e) {
-      setStatus('Failed to submit feedback.')
-    }
-  }
-
-  return (
-    <section id="feedback" className="mx-auto max-w-3xl px-6 py-12">
-      <h2 className="text-white text-2xl font-semibold">Leave a rating</h2>
-      <p className="text-slate-300 mt-2">Share your experience to help us improve.</p>
-      <div className="mt-6">
-        <div className="flex items-center gap-2">
-          {[1,2,3,4,5].map((n) => (
-            <button key={n} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => setRating(n)} className="h-10 w-10 rounded-md flex items-center justify-center bg-white/5 border border-white/10">
-              <Star className={`h-5 w-5 ${ (hover || rating) >= n ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400' }`} />
-            </button>
-          ))}
-        </div>
-        <div className="mt-4 grid gap-3">
-          <input className="bg-slate-800/80 border border-white/10 rounded-lg px-3 h-10 text-white" placeholder="Minecraft Username (optional)" value={ign} onChange={e => setIgn(e.target.value)} />
-          <textarea className="bg-slate-800/80 border border-white/10 rounded-lg px-3 py-2 text-white min-h-[100px]" placeholder="Write a quick comment (optional)" value={comment} onChange={e => setComment(e.target.value)} />
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <button onClick={submit} className="bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white px-4 h-10 rounded-lg">Submit</button>
-          <button onClick={() => setModalOpen(true)} className="px-4 h-10 rounded-lg border border-white/10 text-slate-200 hover:bg-white/5">See all feedbacks</button>
-          <span className="text-sm text-slate-400">{status}</span>
-        </div>
-      </div>
-      <FeedbackListModal open={modalOpen} onClose={() => setModalOpen(false)} />
-    </section>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="mx-auto max-w-7xl px-6 py-12 text-slate-400">
-      <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-sm">© {new Date().getFullYear()} ZenSupply • Not affiliated with Mojang</div>
-        <div className="flex gap-6 text-sm">
-          <a href="#faq" className="hover:text-white">FAQ</a>
-          <a href="#" className="hover:text-white">Terms</a>
-          <a href="#" className="hover:text-white">Privacy</a>
-        </div>
-      </div>
-    </footer>
   )
 }
 
