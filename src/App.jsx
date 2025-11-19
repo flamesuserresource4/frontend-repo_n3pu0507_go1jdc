@@ -146,7 +146,7 @@ function ProductCard({ item, onAdd }) {
       )}
       <div className="aspect-video rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 mb-3 flex items-center justify-center text-slate-400 text-sm overflow-hidden">
         {item.image ? (
-          <img src={item.image} alt={item.title} className="h-full w-full object-contain bg-slate-900/30" />
+          <img src={item.image} alt={item.title} referrerPolicy="no-referrer" loading="lazy" onError={(e)=>{ e.currentTarget.src = 'https://placehold.co/800x450/0b1220/ffffff?text=Image+unavailable' }} className="h-full w-full object-contain bg-slate-900/30" />
         ) : (
           <span>{item.category}</span>
         )}
@@ -193,18 +193,21 @@ function Products({ onAdd, query = '' }) {
                 { id: 'single', label: 'Single', unit_price: augmented.price },
                 { id: 'shulker', label: 'Shulker', bundle_price: 40.0 },
               ],
-              image: augmented.image || 'https://gamepedia.cursecdn.com/minecraft_gamepedia/4/40/Spawner_JE3.png'
+              description: 'Cheap Skeleton Spawners, non duped! Get efficient now!',
+              image: augmented.image || 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/4/40/Spawner_JE3.png'
             }
           }
           if (augmented.title === 'Money') {
             augmented = {
               ...augmented,
+              description: 'In-game Money for just 0.03$ per Million.',
               image: augmented.image || 'https://static.wixstatic.com/media/79eca2_232cfc6d690e4e40a6360d8bdd39495f~mv2.gif'
             }
           }
           if (augmented.title === 'Elytra') {
             augmented = {
               ...augmented,
+              description: 'For just 12$ you can fly to where ever you want.',
               image: augmented.image || 'https://cdn.apexminecrafthosting.com/img/uploads/2022/03/28151238/elytra.png'
             }
           }
@@ -285,7 +288,7 @@ function SearchModal({ open, onClose, onAdd }) {
             </div>
             <button onClick={onClose} className="h-10 w-10 inline-flex items-center justify-center text-slate-300 hover:text-white"><X className="h-5 w-5" /></button>
           </div>
-          <div className="max-h-[70vh] overflow-y-auto">
+          <div className="max-h:[70vh] md:max-h-[70vh] overflow-y-auto">
             <Products onAdd={onAdd} query={query} />
           </div>
         </div>
