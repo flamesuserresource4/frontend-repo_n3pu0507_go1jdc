@@ -137,6 +137,15 @@ function VariantSelector({ item, onConfirm }) {
 
 function ProductCard({ item, onAdd }) {
   const [open, setOpen] = useState(false)
+  const onImgError = (e) => {
+    const el = e.currentTarget
+    const backup = el.getAttribute('data-backup')
+    if (backup && el.src !== backup) {
+      el.src = backup
+    } else {
+      el.src = 'https://placehold.co/800x450/0b1220/ffffff?text=Image+unavailable'
+    }
+  }
   return (
     <div className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 hover:bg-white/10 transition relative h-full flex flex-col">
       {item.badge && (
@@ -146,7 +155,7 @@ function ProductCard({ item, onAdd }) {
       )}
       <div className="aspect-video rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 mb-3 flex items-center justify-center text-slate-400 text-sm overflow-hidden">
         {item.image ? (
-          <img src={item.image} alt={item.title} referrerPolicy="no-referrer" loading="lazy" onError={(e)=>{ e.currentTarget.src = 'https://placehold.co/800x450/0b1220/ffffff?text=Image+unavailable' }} className="h-full w-full object-contain bg-slate-900/30" />
+          <img src={item.image} data-backup={item.backupImage || ''} alt={item.title} referrerPolicy="no-referrer" loading="lazy" onError={onImgError} className="h-full w-full object-contain bg-slate-900/30" />
         ) : (
           <span>{item.category}</span>
         )}
@@ -180,37 +189,60 @@ function Products({ onAdd, query = '' }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    const sanitizeTitle = (t) => (t || '').replace(/\(27x\)/gi, '').replace(/\s+/g, ' ').trim()
+    const stripCountFromLabel = (l) => (l || '').replace(/\(\s*27x\s*\)/gi, '').trim()
+
     const load = async () => {
       try {
         const res = await fetch(`${BACKEND_URL}/products`)
         const data = await res.json()
         setItems((data.items || []).map((p) => {
           let augmented = { ...p }
+
+          // Normalize titles to remove "(27x)" artifacts specifically
+          augmented.title = sanitizeTitle(augmented.title)
+
           if (augmented.title === 'Skeleton Spawner') {
+            // Standardize variants to ensure no "(27x)" suffix appears
+            const unit = augmented.price
             augmented = {
               ...augmented,
-              variants: augmented.variants || [
-                { id: 'single', label: 'Single', unit_price: augmented.price },
+              variants: [
+                { id: 'single', label: 'Single', unit_price: unit },
                 { id: 'shulker', label: 'Shulker', bundle_price: 40.0 },
               ],
-              description: 'Cheap Skeleton Spawners, non duped! Get efficient now!',
-              image: augmented.image || 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/4/40/Spawner_JE3.png'
+              description: 'Cheap Skeleton Spawners, non duped!',
+              image: augmented.image || 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/4/40/Spawner_JE3.png',
+              backupImage: 'https://gamepedia.cursecdn.com/minecraft_gamepedia/4/40/Spawner_JE3.png'
             }
           }
+
           if (augmented.title === 'Money') {
             augmented = {
               ...augmented,
               description: 'In-game Money for just 0.03$ per Million.',
-              image: augmented.image || 'https://static.wixstatic.com/media/79eca2_232cfc6d690e4e40a6360d8bdd39495f~mv2.gif'
+              image: augmented.image || 'https://static.wixstatic.com/media/79eca2_232cfc6d690e4e40a6360d8bdd39495f~mv2.gif',
+              backupImage: 'https://upload.wikimedia.org/wikipedia/commons/5/5a/Us_dollar_sign.svg'
             }
           }
+
           if (augmented.title === 'Elytra') {
             augmented = {
               ...augmented,
-              description: 'For just 12$ you can fly to where ever you want.',
-              image: augmented.image || 'https://cdn.apexminecrafthosting.com/img/uploads/2022/03/28151238/elytra.png'
+              description: 'Elytra for just 12$',
+              image: augmented.image || 'https://cdn.apexminecrafthosting.com/img/uploads/2022/03/28151238/elytra.png',
+              backupImage: 'https://static.wikia.nocookie.net/minecraft_gamepedia/images/0/05/Elytra_%28item%29_JE2_BE2.png'
             }
           }
+
+          // If any backend-provided variant labels have "(27x)", strip it as well
+          if (Array.isArray(augmented.variants)) {
+            augmented.variants = augmented.variants.map(v => ({
+              ...v,
+              label: stripCountFromLabel(v.label)
+            }))
+          }
+
           return augmented
         }))
       } catch (e) {
